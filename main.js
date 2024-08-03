@@ -27,6 +27,33 @@ const handleCreateToDo = (event, todo) => {
   db.close();
 };
 
+const handleUpdateToDo = (event, id, todo) => {
+  const db = new sqlite3.Database("db/todos.db");
+
+  db.run(
+    "UPDATE todos SET title = $title, description = $description WHERE id = $id",
+    {
+      $id: id,
+      $title: todo.title,
+      $description: todo.description,
+    }
+  );
+
+  db.close();
+};
+
+const handleDeleteToDo = (event, id) => {
+  const db = new sqlite3.Database("db/todos.db");
+
+  const sqlStatement = `DELETE FROM todos WHERE id = ${id}`;
+
+  db.serialize(() => {
+    db.exec(sqlStatement);
+  });
+
+  db.close();
+};
+
 const createWindow = () => {
   const win = new BrowserWindow({
     width: 800,
@@ -43,10 +70,12 @@ app.whenReady().then(() => {
   runMigration();
 
   ipcMain.on("create-todo", handleCreateToDo);
+  ipcMain.on("update-todo", handleUpdateToDo);
+  ipcMain.on("delete-todo", handleDeleteToDo);
   ipcMain.on("get-todos", (event) => {
     const db = new sqlite3.Database("db/todos.db");
 
-    const sqlStatement = `SELECT title, description FROM todos`;
+    const sqlStatement = `SELECT id, title, description FROM todos`;
 
     db.all(sqlStatement, function (err, rows) {
       // Handle error
